@@ -1,4 +1,3 @@
-// user/sleep.c - pause for a number of ticks
 #include "kernel/types.h"
 #include "user/user.h"
 
@@ -9,7 +8,6 @@ main(int argc, char *argv[])
     fprintf(2, "usage: sleep ticks\n");
     exit(1);
   }
-  // reject anything that is not a plain non-negative integer
   for(char *s = argv[1]; *s; s++){
     if(*s < '0' || *s > '9'){
       fprintf(2, "sleep: invalid number of ticks '%s'\n", argv[1]);
