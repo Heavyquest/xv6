@@ -110,6 +110,7 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
 uint64
 sys_interpose(void)
 {
@@ -120,7 +121,9 @@ sys_interpose(void)
   argint(0, &mask);
   if(argstr(1, path, MAXPATH) < 0)
     return -1;
-  p->sbmask = (uint64)(uint)mask;
-  safestrcpy(p->sbpath, path, MAXPATH);
+
+  if(p->sbmask == 0)
+    safestrcpy(p->sbpath, path, MAXPATH);
+  p->sbmask |= (uint64)(uint)mask;
   return 0;
 }
