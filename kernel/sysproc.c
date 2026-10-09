@@ -110,3 +110,17 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+uint64
+sys_interpose(void)
+{
+  int mask;
+  char path[MAXPATH];
+  struct proc *p = myproc();
+
+  argint(0, &mask);
+  if(argstr(1, path, MAXPATH) < 0)
+    return -1;
+  p->sbmask = (uint64)(uint)mask;
+  safestrcpy(p->sbpath, path, MAXPATH);
+  return 0;
+}

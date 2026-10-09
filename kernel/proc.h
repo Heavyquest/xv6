@@ -101,4 +101,6 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint64 sbmask;               // syscalls banned by interpose()
+  char sbpath[MAXPATH];        // path still allowed for open/exec ("-" = none)
 };

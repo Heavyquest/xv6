@@ -124,6 +124,8 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->sbmask = 0;
+  p->sbpath[0] = 0;
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -288,6 +290,8 @@ kfork(void)
   np->cwd = idup(p->cwd);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
+  np->sbmask = p->sbmask;
+  safestrcpy(np->sbpath, p->sbpath, MAXPATH);
 
   pid = np->pid;
 
