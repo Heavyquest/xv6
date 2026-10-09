@@ -1,0 +1,6 @@
+1. syscall() was called by usertrap() (kernel/trap.c, line 68).
+2. p->trapfram->a7 is 15, which is SYS_open, the system call number for open().
+3. The previous mode was user mode. sstatus is 0x200000022, and its SPP bit is 0, which means the trap came from user mode.
+4. The kernel panics at 0x80001d62, the instruction "lw a3,0(zero)", a 32-bit load from address 0. The variable num corresponds to register a3.
+5. The kernel crashes because address 0 is not mapped in the kernel address space. The load from address 0 causesa load page fault, which matches scause=0xd, and the kernel panics.
+6. The process running when the kernel panicked was "init", with pid 1.
