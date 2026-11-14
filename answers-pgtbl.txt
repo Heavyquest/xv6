@@ -1,0 +1,41 @@
+Each PTE has a physical page number in bits 10 and up, and flag bits in
+bits 0-9: V=0x01 valid, R=0x02 read, W=0x04 write, X=0x08 execute,
+U=0x10 user-accessible, A=0x40 accessed, D=0x80 dirty.
+
+va 0x0     pte 0x21FCD45B  perm 0x5B (V R X U A)
+   Text (code), first page. Executable and readable from user mode, not
+   writable, so the program cannot overwrite its own code. A is set because
+   the CPU has fetched instructions from this page.
+
+va 0x1000  pte 0x21FD201B  perm 0x1B (V R X U)
+   Text (code), second page. Same permissions as above. A is not set
+   because this page has not been accessed yet.
+
+va 0x2000  pte 0x21FD1417  perm 0x17 (V R W U)
+   Data (global variables). Readable and writable from user mode, not
+   executable. Not accessed yet, so A and D are clear.
+
+va 0x3000  pte 0x21FD1007  perm 0x07 (V R W, no U)
+   Stack guard page. The user bit is clear, so if the stack overflows
+   into it, the access causes a page fault instead of silently
+   corrupting memory.
+
+va 0x4000  pte 0x21FD1CD7  perm 0xD7 (V R W U A D)
+   User stack. Readable and writable from user mode. A and D are set
+   because the program has already read and written it.
+
+va 0x5000 - 0x9000   pte 0x0
+   Not mapped (valid bit is clear). The process has no memory here.
+
+va 0x3FFFFF6000 - 0x3FFFFFD000   pte 0x0
+   Not mapped. This is unused space just below the trapframe (it is where
+   the USYSCALL page will be mapped once that part of the lab is done).
+
+va 0x3FFFFFE000  pte 0x21FC94C7  perm 0xC7 (V R W A D, no U)
+   Trapframe. Stores the user registers when a trap occurs. Kernel-only
+   because U is clear. A and D are set because the kernel has written it.
+
+va 0x3FFFFFF000  pte 0x2000184B  perm 0x4B (V R X A, no U)
+   Trampoline. The code that switches between user and kernel mode on
+   traps. Executable but not writable, and kernel-only because U is
+   clear. It is mapped at the top of every address space.
