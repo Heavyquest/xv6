@@ -146,12 +146,47 @@ walkaddr(pagetable_t pagetable, uint64 va)
   return pa;
 }
 
+// Print the valid PTEs of one page-table level, then recurse into
+// lower levels. level is 2 for the root table, 0 for the last level;
+// vabase is the virtual address covered by the first entry of this table.
+static void
+vmprint_walk(pagetable_t pagetable, int level, uint64 vabase)
+{
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if((pte & PTE_V) == 0)
+      continue;                         // skip invalid entries
+
+    // Each entry at this level covers 2^(12 + 9*level) bytes.
+    uint64 va = vabase | ((uint64)i << (12 + 9 * level));
+    uint64 pa = PTE2PA(pte);
+
+    for(int j = 0; j < 3 - level; j++)  // one " .." per depth
+      printk(" ..");
+    printk("%p: pte %p pa %p", (void *)va, (void *)pte, (void *)pa);
+
+    // Leaf entries (R/W/X set) also print their permissions.
+    if(pte & (PTE_R | PTE_W | PTE_X)){
+      printk(" ");
+      if(pte & PTE_R) printk("R");
+      if(pte & PTE_W) printk("W");
+      if(pte & PTE_X) printk("X");
+      if(pte & PTE_U) printk("U");
+    }
+    printk("\n");
+
+    // No R/W/X bits means this PTE points to a lower-level table.
+    if((pte & (PTE_R | PTE_W | PTE_X)) == 0)
+      vmprint_walk((pagetable_t)pa, level - 1, va);
+  }
+}
 
 #if defined(LAB_PGTBL) || defined(SOL_MMAP) || defined(SOL_COW)
 void
 vmprint(pagetable_t pagetable)
 {
-  // your code here
+  printk("page table %p\n", (void *)pagetable);
+  vmprint_walk(pagetable, 2, 0);
 }
 #endif
 

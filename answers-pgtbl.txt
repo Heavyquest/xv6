@@ -1,3 +1,5 @@
+Inspect page table
+
 Each PTE has a physical page number in bits 10 and up, and flag bits in
 bits 0-9: V=0x01 valid, R=0x02 read, W=0x04 write, X=0x08 execute,
 U=0x10 user-accessible, A=0x40 accessed, D=0x80 dirty.
@@ -39,3 +41,43 @@ va 0x3FFFFFF000  pte 0x2000184B  perm 0x4B (V R X A, no U)
    Trampoline. The code that switches between user and kernel mode on
    traps. Executable but not writable, and kernel-only because U is
    clear. It is mapped at the top of every address space.
+
+
+
+vmprint: leaf pages
+
+va 0x0, 0x1000  (R X U)
+  Text (code) pages of pgtbltest. Allowed: user mode can read and execute
+  them. Not allowed: writing, so the program cannot overwrite its own
+  code. These are the same pages as perm 0x5B / 0x1B in print_pgtbl
+  (vmprint just doesn't print the A bit).
+
+va 0x2000  (R W U)
+  Data. Allowed: reading and writing from user mode. Not allowed:
+  executing, which stops injected data being run as code. Same as perm
+  0x17 in print_pgtbl.
+
+va 0x3000  (R W, no U)
+  Stack guard page. The kernel could read and write it, but user mode
+  has no access, so a stack overflow causes a page fault instead of
+  silently corrupting the data below. Same as perm 0x7 in print_pgtbl.
+
+va 0x4000  (R W U)
+  User stack. Allowed: reading and writing from user mode. Not allowed:
+  executing. Same as perm 0xD7 in print_pgtbl (A and D are set because it
+  has been used).
+
+va 0x3FFFFFE000  (R W, no U)
+  Trapframe, where the user registers are saved on a trap. Only the
+  kernel can touch it; user mode cannot access it at all. Same as 0xC7
+  in print_pgtbl.
+
+va 0x3FFFFFF000  (R X, no U)
+  Trampoline, the code that switches between user and kernel mode. It
+  can be read and executed but not written, and it is not accessible
+  from user code. It is mapped at the top of every address space. Same as
+  0x4B in print_pgtbl.
+
+Non-leaf entries (no letters) point to the next-level page table, so they
+are not memory the program uses directly. Unmapped pages seen in
+print_pgtbl do not appear in vmprint because their PTE is 0.
