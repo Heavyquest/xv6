@@ -108,3 +108,15 @@ kernel state (fork, write, sbrk, kill) or need the kernel to check
 permissions still have to trap into the kernel. Also, every extra field
 must be kept up to date by the kernel, and the whole structure has to fit
 in the one page.
+
+How many superpage PTEs does your solution use? How many bottom-level
+pages do these superpage PTEs save?
+
+My kernel page table uses 95 superpage PTEs (level-1 leaf entries),
+and 579 regular 4KB PTEs; ksuper_test reported these numbers.
+
+Each superpage PTE replaces a bottom-level (level-0) page-table page,
+which would hold 512 PTEs mapping 512 4KB pages. So the superpages save
+95 bottom-level page-table pages, i.e. 95 * 4KB = 380KB of physical
+memory, and avoid 95 * 512 = 48,640 individual 4KB PTEs. They also let
+the TLB cover each 2MB with one entry instead of 512.
