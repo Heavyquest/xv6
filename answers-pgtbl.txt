@@ -81,3 +81,30 @@ va 0x3FFFFFF000  (R X, no U)
 Non-leaf entries (no letters) point to the next-level page table, so they
 are not memory the program uses directly. Unmapped pages seen in
 print_pgtbl do not appear in vmprint because their PTE is 0.
+
+Speed up system calls: which other system calls could use the shared page?
+
+Any system call that only returns a value the kernel already knows, and
+that the process is allowed to see, could be served from the shared
+page. Examples:
+
+1. uptime(): the kernel's timer interrupt handler (clockintr) increments
+   the global "ticks" counter. If it also copied ticks into a field of
+   struct usyscall, the user-level uptime() could just read that field
+   instead of trapping into the kernel. The cost is one extra memory
+   write per tick, and the value can be up to one tick out of date,
+   which is the same precision as the system call itself.
+
+2. Per-process values that rarely change, such as the process's own
+   size (sz) or its pid, could be stored and updated only when they
+   change (for example in growproc), so reading them is free.
+
+Why this is safe: the page is mapped PTE_R | PTE_U only, so user code can
+read it but not modify it, and it contains nothing secret that the system
+call would not have returned anyway.
+
+Limits: it only helps calls that merely read data. Calls that change
+kernel state (fork, write, sbrk, kill) or need the kernel to check
+permissions still have to trap into the kernel. Also, every extra field
+must be kept up to date by the kernel, and the whole structure has to fit
+in the one page.
