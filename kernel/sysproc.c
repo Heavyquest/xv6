@@ -110,7 +110,35 @@ sys_vmprint(void)
 int
 sys_pgaccess(void)
 {
-  // lab pgtbl: your code here.
+  uint64 base, maskaddr;
+  int len;
+  char mask[512];                       // room for up to 4096 pages
+
+  argaddr(0, &base);
+  argint(1, &len);
+  argaddr(2, &maskaddr);
+
+  if(len < 0 || len > (int)(8 * sizeof(mask)))
+    return -1;
+
+  struct proc *p = myproc();
+  memset(mask, 0, sizeof(mask));
+
+  for(int i = 0; i < len; i++){
+    pte_t *pte = walk(p->pagetable, base + (uint64)i * PGSIZE, 0);
+    if(pte == 0 || (*pte & PTE_V) == 0)
+      return -1;                        // page is not mapped
+    if(*pte & PTE_A){
+      mask[i / 8] |= (1 << (i % 8));    // report it ...
+      *pte &= ~PTE_A;                   // ... and clear the bit
+    }
+  }
+
+  // Flush stale TLB entries so the CPU sets A again on the next access.
+  sfence_vma();
+
+  if(copyout(p->pagetable, p->sz, maskaddr, mask, (len + 7) / 8) < 0)
+    return -1;
   return 0;
 }
 #endif
