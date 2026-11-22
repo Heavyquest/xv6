@@ -1,0 +1,53 @@
+Lab: traps - RISC-V assembly answers
+
+1. Which registers contain arguments to functions? For example, which
+   register holds 13 in main's call to printf?
+
+   The argument registers are a0-a7 (a0 is the first argument, a1 the
+   second, and so on; extra arguments go on the stack). In main's call
+   printf("%d %d\n", f(8)+1, 13), the format string pointer is in a0, the
+   value of f(8)+1 is in a1, and 13 is in a2 (call.asm has "li a2,13").
+
+2. Where is the call to function f in the assembly code for main? Where is
+   the call to g?
+
+   There is no call to either. The compiler inlined g into f and f into
+   main, and since f(8)+1 is a constant it computed the value 12 at compile
+   time. main just loads it with "li a1,12" before calling printf.
+
+3. At what address is the function printf located?
+
+   0x6fe
+
+4. What value is in the register ra just after the jalr to printf in main?
+
+   The call to printf is at address 0x30 in main (written as a jal, which
+   links the same way as jalr). It saves the address of the next
+   instruction in ra, so ra = 0x30 + 4 = 0x34, which is the "li a0,0"
+   that starts exit(0).
+
+5. Run the following code:
+       unsigned int i = 0x00646c72;
+       printf("H%x Wo%s", 57616, (char *) &i);
+   What is the output?
+
+   The output is "He110 World". 57616 in hex is 0xe110, so "%x" prints
+   "e110", giving "He110". RISC-V is little-endian, so the bytes of i in
+   memory are 0x72, 0x6c, 0x64, 0x00, which is 'r', 'l', 'd' and the
+   terminating 0, so "%s" prints "rld". The full output is
+   "He110 Wo" + "rld" = "He110 World".
+ 
+   If RISC-V were big-endian, i would have to be 0x726c6400 so that its
+   bytes in memory are still 0x72, 0x6c, 0x64, 0x00. 57616 would not need
+   to change, because it is passed as an integer value and %x prints the
+   number the same way regardless of byte order.
+
+6. In the following code, what is going to be printed after 'y='?
+       printf("x=%d y=%d", 3);
+
+   It prints an unpredictable value (whatever is left in register a2 at the
+   time of the call). printf reads its arguments from the argument
+   registers: the format string is in a0, 3 is in a1, and the second %d
+   takes the next argument, a2. Since the caller did not pass a second
+   value, a2 still holds some leftover value from earlier code, so the
+   printed number is not a specific value.
